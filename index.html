@@ -1,0 +1,350 @@
+import React, { useState, useEffect } from 'react';
+import { ShoppingBag, Instagram, Plus, X, Upload, LogOut } from 'lucide-react';
+
+export default function CramponDirectBoutique() {
+  const [products, setProducts] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    category: 'football',
+    price: '',
+    image: '',
+    description: ''
+  });
+  const [loginError, setLoginError] = useState('');
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const result = await window.storage.get('crampon_products');
+      if (result) {
+        setProducts(JSON.parse(result.value));
+      }
+    } catch (error) {
+      setProducts([]);
+    }
+  };
+
+  const saveProducts = async (updatedProducts) => {
+    try {
+      await window.storage.set('crampon_products', JSON.stringify(updatedProducts));
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+    }
+  };
+
+  const handleLogin = () => {
+    if (loginData.username === 'admin' && loginData.password === 'herve regnier le goat') {
+      setIsAdmin(true);
+      setShowLoginModal(false);
+      setLoginError('');
+      setLoginData({ username: '', password: '' });
+    } else {
+      setLoginError('Identifiants incorrects');
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewProduct({ ...newProduct, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddProduct = () => {
+    if (newProduct.name && newProduct.price && newProduct.image) {
+      const product = {
+        id: Date.now(),
+        ...newProduct,
+        price: parseFloat(newProduct.price)
+      };
+      const updatedProducts = [...products, product];
+      saveProducts(updatedProducts);
+      setNewProduct({ name: '', category: 'football', price: '', image: '', description: '' });
+      setShowAddProductModal(false);
+    }
+  };
+
+  const handleDeleteProduct = (id) => {
+    const updatedProducts = products.filter(p => p.id !== id);
+    saveProducts(updatedProducts);
+  };
+
+  const getCategoryLabel = (cat) => {
+    const labels = {
+      football: '⚽ Football',
+      rugby: '🏉 Rugby',
+      chaussettes: '🧦 Chaussettes Anti-Dérapantes'
+    };
+    return labels[cat] || cat;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
+      {/* Header */}
+      <header className="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="w-10 h-10 text-blue-600" strokeWidth={2.5} />
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">CRAMPON DIRECT</h1>
+              <p className="text-sm text-gray-600 font-semibold">BOUTIQUE</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://www.instagram.com/cramponsdirect/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2.5 rounded-full font-bold hover:shadow-lg transform hover:scale-105 transition-all"
+            >
+              <Instagram className="w-5 h-5" />
+              Nous Contacter
+            </a>
+            
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setShowAddProductModal(true)}
+                  className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-green-700 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  Ajouter
+                </button>
+                <button
+                  onClick={() => setIsAdmin(false)}
+                  className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-full font-bold hover:bg-red-700 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 text-center text-white">
+        <h2 className="text-5xl md:text-7xl font-black mb-6 drop-shadow-2xl animate-pulse">
+          LES MEILLEURS CRAMPONS
+        </h2>
+        <p className="text-xl md:text-2xl font-bold drop-shadow-lg max-w-2xl mx-auto">
+          Football • Rugby • Chaussettes Anti-Dérapantes
+        </p>
+      </section>
+
+      {/* Products Grid */}
+      <section className="max-w-7xl mx-auto px-4 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map(product => (
+            <div key={product.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-blue-500/50">
+              <div className="relative h-64 bg-gray-100 overflow-hidden">
+                {product.image && (
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                  {getCategoryLabel(product.category).split(' ')[0]}
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <h3 className="text-2xl font-black text-gray-900 mb-2">{product.name}</h3>
+                <p className="text-gray-600 mb-4 text-sm">{product.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-3xl font-black text-blue-600">{product.price}€</span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {products.length === 0 && (
+            <div className="col-span-full text-center py-20 text-white">
+              <p className="text-2xl font-bold">Aucun produit pour le moment</p>
+              <p className="text-lg mt-2">Revenez bientôt !</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Footer avec bouton admin caché */}
+      <footer className="bg-gray-900 text-white py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-lg font-bold mb-2">CRAMPON DIRECT BOUTIQUE</p>
+          <p className="text-gray-400">Contactez-nous sur Instagram pour toute commande</p>
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="mt-4 text-xs text-gray-700 hover:text-gray-500 transition-all"
+          >
+            .
+          </button>
+        </div>
+      </footer>
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black">Connexion Admin</h3>
+              <button onClick={() => {
+                setShowLoginModal(false);
+                setLoginError('');
+                setLoginData({ username: '', password: '' });
+              }}>
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold mb-2">Identifiant</label>
+                <input
+                  type="text"
+                  value={loginData.username}
+                  onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">Mot de passe</label>
+                <input
+                  type="password"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              
+              {loginError && (
+                <p className="text-red-600 text-sm font-bold">{loginError}</p>
+              )}
+              
+              <button
+                onClick={handleLogin}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-all"
+              >
+                Se connecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Product Modal */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full my-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black">Ajouter un Produit</h3>
+              <button onClick={() => setShowAddProductModal(false)}>
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold mb-2">Nom du produit</label>
+                <input
+                  type="text"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">Catégorie</label>
+                <select
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                >
+                  <option value="football">⚽ Football</option>
+                  <option value="rugby">🏉 Rugby</option>
+                  <option value="chaussettes">🧦 Chaussettes Anti-Dérapantes</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">Prix (€)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">Description</label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none h-24"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">Image</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-600 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="imageUpload"
+                  />
+                  <label htmlFor="imageUpload" className="cursor-pointer">
+                    {newProduct.image ? (
+                      <img src={newProduct.image} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                    ) : (
+                      <div className="text-gray-500">
+                        <Upload className="w-12 h-12 mx-auto mb-2" />
+                        <p className="font-bold">Cliquez pour ajouter une image</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleAddProduct}
+                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-all"
+              >
+                Ajouter le produit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
